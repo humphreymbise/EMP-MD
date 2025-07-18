@@ -1,7 +1,7 @@
 {
-  "name": "EMP-md",
+  "name": "emp-md",
   "version": "1.0.0",
-  "description": "ZEZE MD is a powerful multi-device WhatsApp bot built using Baileys.",
+  "description": "emp-MD is a powerful multi-device WhatsApp bot built using Baileys.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -15,7 +15,7 @@
     "the100"
   ],
   
-  "author": "zezetech",
+  "author": "Toputech",
 "license": "ISC",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.0",
@@ -149,4 +149,4 @@
     "yt-search": "^2.10.4",
     "youtubedl-core": "^4.11.7"
   }
-  }
+}
