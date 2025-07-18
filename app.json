@@ -1,1 +1,66 @@
+{
+  "name of bot": "EMP-MD",
+  "repository": "https://github.com/humphreymbise/EMP-MD",
+  "logo": "https://i.imgur.com/jE8eQsP.jpeg",
+  "keywords": [
+    "bot",
+    "node",
+    "baileys",
+    "whatsapp"
+  ],
+  "stack": "heroku-24",
+  "env": {
+    "PREFIX": {
+      "description": "Choose your bot's prefix",
+      "value": "!",
+      "required": yes
+    },
+        "PUBLIC_MODE": {
+      "description": "Set 'yes'or 'true' to make your bot public or 'no' or 'false' to keep it private",
+      "value": "yes",
+      "required": no
+    },
+    "AUTO_STATUS_VIEW": {
+      "description": "Auto view WhatsApp status (true/false)",
+      "value": "yes",
+      "required": no
+    },
+    "AUTO_REPLY": {
+      "description": "Enable auto reply feature (true/false)",
+      "value": "yes",
+      "required": no
+    },
+    "AUTO_REPLY_MSG": {
+      "description": "Message sent as auto reply",
+      "value": "how can u command me without menu?😀.",
+      "required": no
+    },
+    "BOT_NAME": {
+      "description": "Name of your bot",
+      "value": "EMP-MD",
+      "required": no
+    },
+    "SESSION_ID": {
+      "description": "Session ID (generated after scanning QR code)",
+      "value": "",
+      "required": yes
+    },
+      "PRESENCE": {
+      "description": "Choose your bot's presence",
+      "value": "recording",
+      "required": yes
+    },
+    "OWNER_NUMBER": {
+      "description": "Owner phone number (without '+' sign, e.g., 255682937675)",
+      "value": "255682937675",
+      "required": no
+    }
+  },
 
+  "formation": {
+    "worker": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}
