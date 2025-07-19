@@ -1,7 +1,7 @@
 {
-  "name": "emp-md",
+  "name": "hgm-md",
   "version": "1.0.0",
-  "description": "emp-MD is a powerful multi-device WhatsApp bot built using Baileys.",
+  "description": "HGM_bug-MD is a powerful multi-device WhatsApp bot built using Baileys.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
@@ -15,7 +15,7 @@
     "the100"
   ],
   
-  "author": "Toputech",
+  "author": "Zezetech",
 "license": "ISC",
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.0",
