@@ -1,7 +1,7 @@
 {
-  "name": "hgm-md",
+  "name": "Rey47_bug-md",
   "version": "1.0.0",
-  "description": "HGM_bug-MD is a powerful multi-device WhatsApp bot built using Baileys.",
+  "description": "Rey47_bug-MD is a powerful multi-device WhatsApp bot built using Baileys.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
