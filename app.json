@@ -11,7 +11,7 @@
       "value": ""
     },
     "PREFIX": {
-      "description": "Bot command prefix (example: ., !, #)",
+      "description": "Bot command prefix (example: ., !,)",
       "value": "."
     },
     "OWNER_NUMBER": {
