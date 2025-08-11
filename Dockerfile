@@ -1,18 +1,25 @@
-# Base image
-FROM node:16
+FROM node:lts
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg imagemagick webp && apt-get clean
 
 # Set working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and install dependencies
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
-# Copy application source code
+# Install dependencies
+RUN npm install && npm cache clean --force
+
+# Copy application code
 COPY . .
 
-# Expose the port the app runs on
+# Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Set environment
+ENV NODE_ENV production
+
+# Run command
+CMD ["npm", "run", "start"]
