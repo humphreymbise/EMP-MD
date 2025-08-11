@@ -1,1 +1,12 @@
 # EMP-MD
+
+Linking/Pairing:
+## ` Pair onrender`
+<p align="centre">
+<a href="https://EMP-pair.onrender.com"><img height= "37" title="Author" src="https://img.shields.io/badge/Session-green?style=for-the-badge&logo=render"></a>
+<p/>
+            
+<!-- Glowing Footer -->
+<p align="center">
+  <img src="https://i.imgur.com/dBaSKWF.gif" height="40" width="100%">
+</p>
