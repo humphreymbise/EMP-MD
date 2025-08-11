@@ -41,7 +41,7 @@ const color = (text, color) => {
 async function authentication() {
   if (!fs.existsSync(__dirname + '/sessions/creds.json')) {
     if(!session) return console.log('Please add your session to SESSION env !!')
-const sessdata = session.replace("BLACK MD;;;", '');
+const sessdata = session.replace("EMP MD;;;", '');
 const filer = await File.fromURL(`https://mega.nz/file/${sessdata}`)
 filer.download((err, data) => {
 if(err) throw err
