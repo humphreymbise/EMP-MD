@@ -2,7 +2,7 @@
    "name": "EMP MD", 
    "version": "3.0.0", 
    "description": "WhatsApp Multi Device Bot", 
-   "main": "index.js", 
+   "main": "Dockerfile", 
    "type": "commonjs", 
    "scripts": { 
      "start": "node index.js" 
