@@ -1,5 +1,6 @@
 # EMP-MD
 
+<a href="https://git.io/typing-hgm"><img src="https://readme-typing-svg.demolab.com?font=Black+Ops+One&size=100&pause=1000&color=ff0000&center=true&width=1000&height=200&lines=ELETROMAGNETICPOWER V²" alt="Typing HGM" /></a>
 </p>
 
 **1.step1**
