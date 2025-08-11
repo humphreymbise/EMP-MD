@@ -3,7 +3,7 @@
 Linking/Pairing:
 ## ` Pair onrender`
 <p align="centre">
-<a href="https://EMP-pair.onrender.com"><img height= "37" title="Author" src="https://img.shields.io/badge/Session-green?style=for-the-badge&logo=render"></a>
+<a href="https://emp-scanner.onrender.com"><img height= "37" title="Author" src="https://img.shields.io/badge/Session-green?style=for-the-badge&logo=render"></a>
 <p/>
             
 <!-- Glowing Footer -->
