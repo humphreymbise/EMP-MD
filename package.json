@@ -90,12 +90,12 @@
    }, 
    "repository": { 
      "type": "git", 
-     "url": "git+https://github.com/humphreymbise/EMP-bot.git" 
+     "url": "git+https://github.com/humphreymbise/EMP-MD-bot.git" 
    }, 
    "bugs": { 
-     "url": "https://github.com/humphreymbise/EMP/issues" 
+     "url": "https://github.com/humphreymbise/EMP-MD/issues" 
    }, 
-   "homepage": "https://github.com/humphreymbise/EMP#readme" 
+   "homepage": "https://github.com/humphreymbise/EMP-MD#readme" 
 }    "translate-google-api": "^1.0.4",
    "unlimited-ai": "^6.0.0",
     "url": "^0.11.4",
