@@ -1,25 +1,7 @@
-FROM node:lts
-
-# Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg imagemagick webp && apt-get clean
-
-# Set working directory
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install && npm cache clean --force
-
-# Copy application code
+FROM node:lts-buster
+RUN git clone https://github.com/humphreymbise/EMP-MD
+WORKDIR /root/EMP-MD
+RUN npm install && npm install -g pm2 || yarn install --network-concurrency 1
 COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Set environment
-ENV NODE_ENV production
-
-# Run command
-CMD ["npm", "run", "start"]
+EXPOSE 9090
+CMD ["npm", "start"]
