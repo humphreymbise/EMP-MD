@@ -1,326 +1,648 @@
-/**
- * EMP Bot - A WhatsApp Bot
- * Copyright (c) 2024 Professor
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the MIT License.
- * 
- * Credits:
- * - Baileys Library by @adiwajshing
- * - Pair Code implementation inspired by TechGod143 & DGXEON
- */
-require('./settings')
-const { Boom } = require('@hapi/boom')
-const fs = require('fs')
-const chalk = require('chalk')
-const FileType = require('file-type')
-const path = require('path')
-const axios = require('axios')
-const { handleMessages, handleGroupParticipantUpdate, handleStatus } = require('./main');
-const PhoneNumber = require('awesome-phonenumber')
-const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/exif')
-const { smsg, isUrl, generateMessageTag, getBuffer, getSizeMedia, fetch, await, sleep, reSize } = require('./lib/myfunc')
-const { 
-    default: makeWASocket,
-    useMultiFileAuthState, 
-    DisconnectReason, 
-    fetchLatestBaileysVersion,
-    generateForwardMessageContent,
-    prepareWAMessageMedia,
-    generateWAMessageFromContent,
-    generateMessageID,
-    downloadContentFromMessage,
-    jidDecode,
-    proto,
-    jidNormalizedUser,
-    makeCacheableSignalKeyStore,
-    delay
-} = require("@whiskeysockets/baileys")
-const NodeCache = require("node-cache")
-const pino = require("pino")
-const readline = require("readline")
-const { parsePhoneNumber } = require("libphonenumber-js")
-const { PHONENUMBER_MCC } = require('@whiskeysockets/baileys/lib/Utils/generics')
-const { rmSync, existsSync } = require('fs')
-const { join } = require('path')
+/*
 
-// Create a store object with required methods
-const store = {
-    messages: {},
-    contacts: {},
-    chats: {},
-    groupMetadata: async (jid) => {
-        return {}
-    },
-    bind: function(ev) {
-        // Handle events
-        ev.on('messages.upsert', ({ messages }) => {
-            messages.forEach(msg => {
-                if (msg.key && msg.key.remoteJid) {
-                    this.messages[msg.key.remoteJid] = this.messages[msg.key.remoteJid] || {}
-                    this.messages[msg.key.remoteJid][msg.key.id] = msg
-                }
-            })
-        })
-        
-        ev.on('contacts.update', (contacts) => {
-            contacts.forEach(contact => {
-                if (contact.id) {
-                    this.contacts[contact.id] = contact
-                }
-            })
-        })
-        
-        ev.on('chats.set', (chats) => {
-            this.chats = chats
-        })
-    },
-    loadMessage: async (jid, id) => {
-        return this.messages[jid]?.[id] || null
-    }
-}
+	* Create By GlobalTechInfo
 
-let phoneNumber = "254112192119"
-let owner = JSON.parse(fs.readFileSync('./data/owner.json'))
+	* Follow https://github.com/GlobalTechInfo
 
-global.botname = "JINX-XMD BOT"
-global.themeemoji = "•"
+	* Whatsapp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07
 
-const settings = require('./settings')
-const pairingCode = !!phoneNumber || process.argv.includes("--pairing-code")
-const useMobile = process.argv.includes("--mobile")
+*/
 
-// Only create readline interface if we're in an interactive environment
-const rl = process.stdin.isTTY ? readline.createInterface({ input: process.stdin, output: process.stdout }) : null
-const question = (text) => {
-    if (rl) {
-        return new Promise((resolve) => rl.question(text, resolve))
-    } else {
-        // In non-interactive environment, use ownerNumber from settings
-        return Promise.resolve(settings.ownerNumber || phoneNumber)
-    }
-}
 
-         
-async function startXeonBotInc() {
-    let { version, isLatest } = await fetchLatestBaileysVersion()
-    const { state, saveCreds } = await useMultiFileAuthState(`./session`)
-    const msgRetryCounterCache = new NodeCache()
+require('dotenv').config();
 
-    const XeonBotInc = makeWASocket({
-        version,
-        logger: pino({ level: 'silent' }),
-        printQRInTerminal: !pairingCode,
-        browser: ["Ubuntu", "Chrome", "20.0.04"],
-        auth: {
-            creds: state.creds,
-            keys: makeCacheableSignalKeyStore(state.keys, pino({ level: "fatal" }).child({ level: "fatal" })),
-        },
-        markOnlineOnConnect: true,
-        generateHighQualityLinkPreview: true,
-        getMessage: async (key) => {
-            let jid = jidNormalizedUser(key.remoteJid)
-            let msg = await store.loadMessage(jid, key.id)
-            return msg?.message || ""
-        },
-        msgRetryCounterCache,
-        defaultQueryTimeoutMs: undefined,
-    })
+require('./settings');
 
-    store.bind(XeonBotInc.ev)
+const fs = require('fs');
 
-    // Message handling
-    XeonBotInc.ev.on('messages.upsert', async chatUpdate => {
-        try {
-            const mek = chatUpdate.messages[0]
-            if (!mek.message) return
-            mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
-            if (mek.key && mek.key.remoteJid === 'status@broadcast') {
-                await handleStatus(XeonBotInc, chatUpdate);
-                return;
-            }
-            if (!XeonBotInc.public && !mek.key.fromMe && chatUpdate.type === 'notify') return
-            if (mek.key.id.startsWith('BAE5') && mek.key.id.length === 16) return
-            
-            try {
-                await handleMessages(XeonBotInc, chatUpdate, true)
-            } catch (err) {
-                console.error("Error in handleMessages:", err)
-                // Only try to send error message if we have a valid chatId
-                if (mek.key && mek.key.remoteJid) {
-                    await XeonBotInc.sendMessage(mek.key.remoteJid, { 
-                        text: '❌ An error occurred while processing your message.',
-                        contextInfo: {
-                            forwardingScore: 1,
-                            isForwarded: true,
-                            forwardedNewsletterMessageInfo: {
-                                newsletterJid: '120363302677217436@newsletter',
-                                newsletterName: 'JINX-XMD',
-                                serverMessageId: -1
-                            }
-                        }
-                    }).catch(console.error);
-                }
-            }
-        } catch (err) {
-            console.error("Error in messages.upsert:", err)
-        }
-    })
+const pino = require('pino');
 
-    // Add these event handlers for better functionality
-    XeonBotInc.decodeJid = (jid) => {
-        if (!jid) return jid
-        if (/:\d+@/gi.test(jid)) {
-            let decode = jidDecode(jid) || {}
-            return decode.user && decode.server && decode.user + '@' + decode.server || jid
-        } else return jid
-    }
+const path = require('path');
 
-    XeonBotInc.ev.on('contacts.update', update => {
-        for (let contact of update) {
-            let id = XeonBotInc.decodeJid(contact.id)
-            if (store && store.contacts) store.contacts[id] = { id, name: contact.notify }
-        }
-    })
+const axios = require('axios');
 
-    XeonBotInc.getName = (jid, withoutContact = false) => {
-        id = XeonBotInc.decodeJid(jid)
-        withoutContact = XeonBotInc.withoutContact || withoutContact 
-        let v
-        if (id.endsWith("@g.us")) return new Promise(async (resolve) => {
-            v = store.contacts[id] || {}
-            if (!(v.name || v.subject)) v = XeonBotInc.groupMetadata(id) || {}
-            resolve(v.name || v.subject || PhoneNumber('+' + id.replace('@s.whatsapp.net', '')).getNumber('international'))
-        })
-        else v = id === '0@s.whatsapp.net' ? {
-            id,
-            name: 'WhatsApp'
-        } : id === XeonBotInc.decodeJid(XeonBotInc.user.id) ?
-            XeonBotInc.user :
-            (store.contacts[id] || {})
-        return (withoutContact ? '' : v.name) || v.subject || v.verifiedName || PhoneNumber('+' + jid.replace('@s.whatsapp.net', '')).getNumber('international')
-    }
+const chalk = require('chalk');
 
-    XeonBotInc.public = true
+const readline = require('readline');
 
-    XeonBotInc.serializeM = (m) => smsg(XeonBotInc, m, store)
+const { Boom } = require('@hapi/boom');
 
-    // Handle pairing code
-    if (pairingCode && !XeonBotInc.authState.creds.registered) {
-        if (useMobile) throw new Error('Cannot use pairing code with mobile api')
+const qrcode = require('qrcode-terminal');
 
-        let phoneNumber
-        if (!!global.phoneNumber) {
-            phoneNumber = global.phoneNumber
-        } else {
-            phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number 😍\nFormat: 6281376552730 (without + or spaces) : `)))
-        }
+const NodeCache = require('node-cache');
 
-        // Clean the phone number - remove any non-digit characters
-        phoneNumber = phoneNumber.replace(/[^0-9]/g, '')
+const { toBuffer, toDataURL } = require('qrcode');
 
-        // Validate the phone number using awesome-phonenumber
-        const pn = require('awesome-phonenumber');
-        if (!pn('+' + phoneNumber).isValid()) {
-            console.log(chalk.red('Invalid phone number. Please enter your full international number (e.g., 15551234567 for US, 447911123456 for UK, etc.) without + or spaces.'));
-            process.exit(1);
-        }
+const { exec, spawn, execSync } = require('child_process');
 
-        setTimeout(async () => {
-            try {
-                let code = await XeonBotInc.requestPairingCode(phoneNumber)
-                code = code?.match(/.{1,4}/g)?.join("-") || code
-                console.log(chalk.black(chalk.bgGreen(`Your Pairing Code : `)), chalk.black(chalk.white(code)))
-                console.log(chalk.yellow(`\nPlease enter this code in your WhatsApp app:\n1. Open WhatsApp\n2. Go to Settings > Linked Devices\n3. Tap "Link a Device"\n4. Enter the code shown above`))
-            } catch (error) {
-                console.error('Error requesting pairing code:', error)
-                console.log(chalk.red('Failed to get pairing code. Please check your phone number and try again.'))
-            }
-        }, 3000)
-    }
+const { parsePhoneNumber } = require('awesome-phonenumber');
 
-    // Connection handling
-    XeonBotInc.ev.on('connection.update', async (s) => {
-        const { connection, lastDisconnect } = s
-        if (connection == "open") {
-            console.log(chalk.magenta(` `))
-            console.log(chalk.yellow(`🌿Connected to => ` + JSON.stringify(XeonBotInc.user, null, 2)))
-            
-            const botNumber = XeonBotInc.user.id.split(':')[0] + '@s.whatsapp.net';
-            await XeonBotInc.sendMessage(botNumber, { 
-                text: `🤖 Bot Connected Successfully!\n\n⏰ Time: ${new Date().toLocaleString()}\n✅ Status: Online and Ready!
-                \n✅Make sure to join below channel`,
-                contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                        newsletterJid: '',
-                        newsletterName: 'EMP-MD',
-                        serverMessageId: -1
-                    }
-                }
-            });
+const { default: WAConnection, useMultiFileAuthState, Browsers, DisconnectReason, makeInMemoryStore, makeCacheableSignalKeyStore, fetchLatestBaileysVersion, proto, getAggregateVotesInPollMessage } = require('baileys');
 
-            await delay(1999)
-            console.log(chalk.yellow(`\n\n                  ${chalk.bold.blue(`[ ${global.botname || 'EMP BOT'} ]`)}\n\n`))
-            console.log(chalk.cyan(`< ================================================== >`))
-            console.log(chalk.magenta(`\n${global.themeemoji || '•'} YT CHANNEL: MR HACKER`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} GITHUB: caseyweb`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} WA NUMBER: ${owner}`))
-            console.log(chalk.magenta(`${global.themeemoji || '•'} CREDIT: CASEYRHODES`))
-            console.log(chalk.green(`${global.themeemoji || '•'} 🤖 Bot Connected Successfully! ✅`))
-        }
-        if (
-            connection === "close" &&
-            lastDisconnect &&
-            lastDisconnect.error &&
-            lastDisconnect.error.output.statusCode != 401
-        ) {
-            startXeonBotInc()
-        }
-    })
 
-    XeonBotInc.ev.on('creds.update', saveCreds)
-    
-    XeonBotInc.ev.on('group-participants.update', async (update) => {
-        await handleGroupParticipantUpdate(XeonBotInc, update);
-    });
 
-    XeonBotInc.ev.on('messages.upsert', async (m) => {
-        if (m.messages[0].key && m.messages[0].key.remoteJid === 'status@broadcast') {
-            await handleStatus(XeonBotInc, m);
-        }
-    });
+const { dataBase } = require('./src/database');
 
-    XeonBotInc.ev.on('status.update', async (status) => {
-        await handleStatus(XeonBotInc, status);
-    });
+const { app, server, PORT } = require('./src/server');
 
-    XeonBotInc.ev.on('messages.reaction', async (status) => {
-        await handleStatus(XeonBotInc, status);
-    });
 
-    return XeonBotInc
+
+const pairingCode = process.argv.includes('--qr') ? false : process.argv.includes('--pairing-code') || global.pairing_code;
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+
+const question = (text) => new Promise((resolve) => rl.question(text, resolve))
+
+let pairingStarted = false;
+
+let phoneNumber;
+
+
+
+global.fetchApi = async (path = '/', query = {}, options) => {
+
+	const urlnya = (options?.name || options ? ((options?.name || options) in global.APIs ? global.APIs[(options?.name || options)] : (options?.name || options)) : global.APIs['hitori'] ? global.APIs['hitori'] : (options?.name || options)) + path + (query ? '?' + decodeURIComponent(new URLSearchParams(Object.entries({ ...query }))) : '')
+
+	const { data } = await axios.get(urlnya, { ...((options?.name || options) ? {} : { headers: { 'accept': 'application/json', 'x-api-key': global.APIKeys[global.APIs['hitori']]}})})
+
+	return data
+
 }
 
 
-// Start the bot with error handling
-startXeonBotInc().catch(error => {
-    console.error('Fatal error:', error)
-    process.exit(1)
-})
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err)
-})
 
-process.on('unhandledRejection', (err) => {
-    console.error('Unhandled Rejection:', err)
-})
+const storeDB = dataBase(global.tempatStore);
+
+const database = dataBase(global.tempatDB);
+
+const msgRetryCounterCache = new NodeCache();
+
+const groupCache = new NodeCache({ stdTTL: 5 * 60, useClones: false });
+
+
+
+server.listen(PORT, () => {
+
+	console.log('App listened on port', PORT);
+
+});
+
+
+
+const { GroupParticipantsUpdate, MessagesUpsert, Solving } = require('./src/message');
+
+const { isUrl, generateMessageTag, getBuffer, getSizeMedia, fetchJson, sleep } = require('./lib/function');
+
+
+
+/*
+
+	* Create By GlobalTechInfo
+
+	* Follow https://github.com/GlobalTechInfo
+
+	* Whatsapp : https://whatsapp.com/channel/0029VagJIAr3bbVBCpEkAM07
+
+*/
+
+
+
+async function startQasimBot() {
+
+	const { state, saveCreds } = await useMultiFileAuthState('qasimdev');
+
+	const { version, isLatest } = await fetchLatestBaileysVersion();
+
+	const level = pino({ level: 'silent' });
+
+	
+
+	try {
+
+		const loadData = await database.read()
+
+		const storeLoadData = await storeDB.read()
+
+		if (!loadData || Object.keys(loadData).length === 0) {
+
+			global.db = {
+
+				hit: {},
+
+				set: {},
+
+				list: {},
+
+				store: {},
+
+				users: {},
+
+				game: {},
+
+				groups: {},
+
+				database: {},
+
+				premium: [],
+
+				sewa: [],
+
+				...(loadData || {}),
+
+			}
+
+			await database.write(global.db)
+
+		} else {
+
+			global.db = loadData
+
+		}
+
+		if (!storeLoadData || Object.keys(storeLoadData).length === 0) {
+
+			global.store = {
+
+				contacts: {},
+
+				presences: {},
+
+				messages: {},
+
+				groupMetadata: {},
+
+				...(storeLoadData || {}),
+
+			}
+
+			await storeDB.write(global.store)
+
+		} else {
+
+			global.store = storeLoadData
+
+		}
+
+		
+
+		setInterval(async () => {
+
+			if (global.db) await database.write(global.db)
+
+			if (global.store) await storeDB.write(global.store)
+
+		}, 30 * 1000)
+
+	} catch (e) {
+
+		console.log(e)
+
+		process.exit(1)
+
+	}
+
+	
+
+	store.loadMessage = function (remoteJid, id) {
+
+		const messages = store.messages?.[remoteJid]?.array;
+
+		if (!messages) return null;
+
+		return messages.find(msg => msg?.key?.id === id) || null;
+
+	}
+
+	
+
+	const getMessage = async (key) => {
+
+		if (store) {
+
+			const msg = await store.loadMessage(key.remoteJid, key.id);
+
+			return msg?.message || ''
+
+		}
+
+		return {
+
+			conversation: 'Hello From GlobalTechInfo'
+
+		}
+
+	}
+
+	
+
+	const qasim = WAConnection({
+
+		logger: level,
+
+		getMessage,
+
+		syncFullHistory: true,
+
+		maxMsgRetryCount: 15,
+
+		msgRetryCounterCache,
+
+		retryRequestDelayMs: 10,
+
+		defaultQueryTimeoutMs: 0,
+
+		connectTimeoutMs: 60000,
+
+		browser: Browsers.windows('Chrome'),
+
+		generateHighQualityLinkPreview: true,
+
+		//waWebSocketUrl: 'wss://web.whatsapp.com/ws',
+
+		cachedGroupMetadata: async (jid) => groupCache.get(jid),
+
+		shouldSyncHistoryMessage: msg => {
+
+			console.log(`\x1b[32mMemuat Chat [${msg.progress || 0}%]\x1b[39m`);
+
+			return !!msg.syncType;
+
+		},
+
+		transactionOpts: {
+
+			maxCommitRetries: 10,
+
+			delayBetweenTriesMs: 10,
+
+		},
+
+		appStateMacVerification: {
+
+			patch: true,
+
+			snapshot: true,
+
+		},
+
+		auth: {
+
+			creds: state.creds,
+
+			keys: makeCacheableSignalKeyStore(state.keys, level),
+
+		},
+
+	})
+
+	
+
+	if (pairingCode && !phoneNumber && !qasim.authState.creds.registered) {
+
+		async function getPhoneNumber() {
+
+			phoneNumber = global.number_bot ? global.number_bot : process.env.BOT_NUMBER || await question('Please type your WhatsApp number : ');
+
+			phoneNumber = phoneNumber.replace(/[^0-9]/g, '')
+
+			
+
+			if (!parsePhoneNumber('+' + phoneNumber).valid && phoneNumber.length < 6) {
+
+				console.log(chalk.bgBlack(chalk.redBright('Start with your Country WhatsApp code') + chalk.whiteBright(',') + chalk.greenBright(' Example : 92xxx')));
+
+				await getPhoneNumber()
+
+			}
+
+		}
+
+		(async () => {
+
+			await getPhoneNumber();
+
+			await exec('rm -rf ./qasimdev/*');
+
+			console.log('Phone number captured. Waiting for Connection...\n' + chalk.yellowBright('Estimated time: around 2 ~ 5 minutes'))
+
+		})()
+
+	}
+
+	
+
+	await Solving(qasim, store)
+
+	
+
+	qasim.ev.on('creds.update', saveCreds)
+
+	
+
+	qasim.ev.on('connection.update', async (update) => {
+
+		const { qr, connection, lastDisconnect, isNewLogin, receivedPendingNotifications } = update
+
+		if (!qasim.authState.creds.registered) console.log('Connection: ', connection || false);
+
+		if ((connection === 'connecting' || !!qr) && pairingCode && phoneNumber && !qasim.authState.creds.registered && !pairingStarted) {
+
+			setTimeout(async () => {
+
+				pairingStarted = true;
+
+				console.log('Requesting Pairing Code...')
+
+				let code = await qasim.requestPairingCode(phoneNumber);
+
+				console.log(chalk.greenBright(`Your Pairing Code : ${code}`));
+
+			}, 3000)
+
+		}
+
+		if (connection === 'close') {
+
+			const reason = new Boom(lastDisconnect?.error)?.output.statusCode
+
+			if (reason === DisconnectReason.connectionLost) {
+
+				console.log('Connection to Server Lost, Attempting to Reconnect...');
+
+				startQasimBot()
+
+			} else if (reason === DisconnectReason.connectionClosed) {
+
+				console.log('Connection closed, Attempting to Reconnect...');
+
+				startQasimBot()
+
+			} else if (reason === DisconnectReason.restartRequired) {
+
+				console.log('Restart Required...');
+
+				startQasimBot()
+
+			} else if (reason === DisconnectReason.timedOut) {
+
+				console.log('Connection Timed Out, Attempting to Reconnect...');
+
+				startQasimBot()
+
+			} else if (reason === DisconnectReason.badSession) {
+
+				console.log('Delete Session and Scan again...');
+
+				startQasimBot()
+
+			} else if (reason === DisconnectReason.connectionReplaced) {
+
+				console.log('Close current Session first...');
+
+			} else if (reason === DisconnectReason.loggedOut) {
+
+				console.log('Scan again and Run...');
+
+				exec('rm -rf ./qasimdev/*')
+
+				process.exit(1)
+
+			} else if (reason === DisconnectReason.forbidden) {
+
+				console.log('Connection Failure, Scan again and Run...');
+
+				exec('rm -rf ./qasimdev/*')
+
+				process.exit(1)
+
+			} else if (reason === DisconnectReason.multideviceMismatch) {
+
+				console.log('Scan again...');
+
+				exec('rm -rf ./qasimdev/*')
+
+				process.exit(0)
+
+			} else {
+
+				qasim.end(`Unknown DisconnectReason : ${reason}|${connection}`)
+
+			}
+
+		}
+
+		if (connection == 'open') {
+
+			console.log('Connected to : ' + JSON.stringify(qasim.user, null, 2));
+
+			let botNumber = await qasim.decodeJid(qasim.user.id);
+
+			if (global.db?.set[botNumber] && !global.db?.set[botNumber]?.join) {
+
+				if (my.ch.length > 0 && my.ch.includes('@newsletter')) {
+
+					if (my.ch) await qasim.newsletterMsg(my.ch, { type: 'follow' }).catch(e => {})
+
+					db.set[botNumber].join = true
+
+				}
+
+			}
+
+		}
+
+		if (qr) {
+
+			if (!pairingCode) qrcode.generate(qr, { small: true })
+
+			app.use('/qr', async (req, res) => {
+
+				res.setHeader('content-type', 'image/png')
+
+				res.end(await toBuffer(qr))
+
+			});
+
+		}
+
+		if (isNewLogin) console.log(chalk.green('New device login detected...'))
+
+		if (receivedPendingNotifications == 'true') {
+
+			console.log('Please wait About 1 Minute...')
+
+			qasim.ev.flush()
+
+		}
+
+	});
+
+	
+
+	qasim.ev.on('contacts.update', (update) => {
+
+		for (let contact of update) {
+
+			let id = qasim.decodeJid(contact.id)
+
+			if (store && store.contacts) store.contacts[id] = { id, name: contact.notify }
+
+		}
+
+	});
+
+	
+
+	qasim.ev.on('call', async (call) => {
+
+		let botNumber = await qasim.decodeJid(qasim.user.id);
+
+		if (global.db?.set[botNumber]?.anticall) {
+
+			for (let id of call) {
+
+				if (id.status === 'offer') {
+
+					let msg = await qasim.sendMessage(id.from, { 
+
+  text: `Currently, we are unable to accept ${id.isVideo ? 'Video' : 'Voice'} calls.\nIf @${id.from.split('@')[0]} needs assistance, please contact the Owner :)`, 
+
+  mentions: [id.from] 
+
+});
+
+					await qasim.sendContact(id.from, global.owner, msg);
+
+					await qasim.rejectCall(id.id, id.from)
+
+				}
+
+			}
+
+		}
+
+	});
+
+	
+
+	qasim.ev.on('messages.upsert', async (message) => {
+
+		await MessagesUpsert(qasim, message, store, groupCache);
+
+	});
+
+	
+
+	qasim.ev.on('group-participants.update', async (update) => {
+
+		await GroupParticipantsUpdate(qasim, update, store, groupCache);
+
+	});
+
+	
+
+	qasim.ev.on('groups.update', (update) => {
+
+		for (const n of update) {
+
+			if (store.groupMetadata[n.id]) {
+
+				groupCache.set(n.id, n);
+
+				Object.assign(store.groupMetadata[n.id], n);
+
+			}
+
+		}
+
+	});
+
+	
+
+	qasim.ev.on('presence.update', ({ id, presences: update }) => {
+
+		store.presences[id] = store.presences?.[id] || {};
+
+		Object.assign(store.presences[id], update);
+
+	});
+
+	
+
+	setInterval(async () => {
+
+		if (qasim?.user?.id) await qasim.sendPresenceUpdate('available', qasim.decodeJid(qasim.user.id)).catch(e => {})
+
+	}, 10 * 60 * 1000);
+
+
+
+	return qasim
+
+}
+
+
+
+startQasimBot()
+
+
+
+// Process Exit
+
+const cleanup = async (signal) => {
+
+	console.log(`Received ${signal}. Menyimpan database...`)
+
+	if (global.db) await database.write(global.db)
+
+	if (global.store) await storeDB.write(global.store)
+
+	server.close(() => {
+
+		console.log('Server closed. Exiting...')
+
+		process.exit(0)
+
+	})
+
+}
+
+
+
+process.on('SIGINT', () => cleanup('SIGINT'))
+
+process.on('SIGTERM', () => cleanup('SIGTERM'))
+
+process.on('exit', () => cleanup('exit'))
+
+
+
+server.on('error', (error) => {
+
+	if (error.code === 'EADDRINUSE') {
+
+		console.log(`Address localhost:${PORT} in use. Please retry when the port is available!`);
+
+		server.close();
+
+	} else console.error('Server error:', error);
+
+});
+
+
+
+setInterval(() => {}, 1000 * 60 * 10);
 
 let file = require.resolve(__filename)
+
 fs.watchFile(file, () => {
-    fs.unwatchFile(file)
-    console.log(chalk.redBright(`Update ${__filename}`))
-    delete require.cache[file]
-    require(file)
-})
+
+	fs.unwatchFile(file)
+
+	console.log(chalk.redBright(`Update ${__filename}`))
+
+	delete require.cache[file]
+
+	require(file)
+
+});
